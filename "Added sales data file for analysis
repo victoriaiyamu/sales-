@@ -1,0 +1,188 @@
+--List all employees' full names (FirstName and LastName), and their department names.
+select e.FirstName,e.LastName,d.DepartmentName from Employees 
+as e join Departments as d
+on e.DepartmentID=d.DepartmentID
+
+--Find the email and phone number of all employees who joined the company after January 1, 2020
+select email, PhoneNumber, HireDate from Employees
+where HireDate>'01-01-2020'
+
+--Get all the customers whose last name is 'Brown'
+select * from Customers
+where LastName='brown'
+
+--Get a list of employees and their managers' names.
+select e1.FirstName as employeename,
+e2.FirstName as managername
+from Employees as e1
+left join Employees as e2
+on e1.ManagerID=e2.EmployeeID
+order by 
+case 
+when e2.FirstName is null then 0
+else 1
+end, managername asc
+
+
+--Find the projects assigned to each department along with the department's location
+SELECT p.projectname,
+d.DepartmentName,
+d.location
+from Projects as P
+left join Departments as D
+ON P.DepartmentID=D.DepartmentID;
+
+/**List all employees along with their salary information
+Make sure to show all employees even if they have no salary recorded yet*/
+
+select e.FirstName,e.LastName,isnull(c.Salaryamount,0) as Salaryaomunt 
+from Employees as e
+left join Salaries as c
+on e.EmployeeID=c.EmployeeID;
+
+--Calculate the total number of employees in each department--
+select count(e.EmployeeID) as total_employee,
+d.departmentname
+from Employees as e
+inner join Departments as d
+on e.EmployeeID=d.DepartmentID
+group by d.DepartmentName;
+
+
+--Find the average salary of employees per department--
+select avg(s.SalaryAmount) as average_salary,
+d.departmentname
+from  Departments d
+join employees as e
+on d.DepartmentID=e.DepartmentID
+join Salaries as s on 
+e.EmployeeID=s.EmployeeID
+group by d.DepartmentName;
+
+--Count how many days each employee was present --
+select count (a.AttendanceID) as total_attendant,
+e.FirstName
+from Attendance as a
+join Employees e
+on a.EmployeeID=e.EmployeeID
+group by e.FirstName, a.AttendanceID;
+
+
+--Find employees whose salary is above the average salary of all employees in the company--
+
+select firstname,lastname from Employees as e
+join Salaries as s 
+on e.EmployeeID=s.EmployeeID
+where salaryamount>(
+select avg(salaryamount) from Salaries);
+
+--Get a list of departments where the average salary is above $80,000--
+select d.DepartmentName, avg(s.salaryamount) as salaryamount
+from Departments as d
+join Employees as e
+on d.DepartmentID=e.DepartmentID
+join Salaries as s
+on e.EmployeeID=s.EmployeeID
+where S.SalaryAmount> 80000
+group by d.DepartmentName;
+
+
+--Get the details of customers who have placed orders totaling over $1,000
+
+select 
+*
+from Customers as c
+where c.CustomerID in (select o.customerid 
+from Orders as o 
+group by o.CustomerID
+having sum(o.totalamount)>=1000);
+
+
+--List all employees with their full names in the format "FirstName LastName" with only the first letter capitalized--
+select
+concat(upper(left(firstname,1)),
+lower(substring(firstname,2,len(firstname)))) as firstname,
+' ',
+concat(upper(left(lastname,1)),
+lower(substring(lastname,2,len(lastname)))) as lastname
+ from  Employees;
+
+ --Show the department name and the first three characters of each department's location.
+select SUBSTRING(location,1,3)
+as substringe_location,
+departmentname 
+from Departments;
+
+--Replace 'LLC' with 'Inc.' in any department name that contains it
+--temporally view of the changes how it will look-
+select departmentname,
+replace (DepartmentName,'LLC','Inc') as NEW_department
+from departments
+
+--actual update made--
+update Departments
+set DepartmentName
+=REPLACE(departmentname,'LLC','Inc')
+from Departments
+
+--Get all employees who were hired within the last 2 years
+select * 
+from Employees
+where  datediff (YEAR,hiredate,getdate())<=2;
+
+--Find all orders made in the last 412 days
+select * from Orders
+where orderdate>=dateadd(day,-412,getdate());
+
+--Calculate how many months each employee has been with the company
+select firstname, lastname,
+datediff (month,hiredate,getdate()) as employee_time_employed
+from Employees;
+
+
+--Find all project that do not have an assigned department
+select p.ProjectID,d.DepartmentName
+from Projects as p
+left join Departments as d
+on p.DepartmentID=d.DepartmentID
+where d.DepartmentID is null;
+
+--List employees who have never been assigned to a project
+select e.FirstName, e.LastName from Employees as e
+left join Projects as p
+on e.DepartmentID=p.DepartmentID
+where p.ProjectID is null
+
+/**Get a list of employees and the number of projects they are assigned to.
+If an employee is not assigned to any project, show "0"**/
+
+select e.FirstName,e.lastname,
+coalesce (count(p.projectid),0) as projectid
+from Employees as e
+left join Projects as p
+on e.DepartmentID=p.DepartmentID
+group by e.FirstName,e.LastName;
+
+--Use a Recursive CTE to get the hierarchy of employees and their managers up to the top level
+
+with employeeHierarchy as(
+select  managerid, employeeid, firstname, lastname,1 as level 
+from Employees
+where ManagerID is null 
+
+union all
+
+select e1.ManagerID,e1.EmployeeID, e1.FirstName, e1.LastName, e2.level+1
+from employees as e1
+inner join employeeHierarchy as e2
+on e1.ManagerID=e2.EmployeeID)
+
+select  managerid,employeeid, firstname, lastname, level 
+from employeeHierarchy;
+
+
+
+
+
+
+
